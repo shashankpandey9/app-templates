@@ -25,7 +25,7 @@ from contextlib import nullcontext
 from typing import AsyncGenerator
 
 import mlflow
-from agents import Agent, Runner, function_tool, set_default_openai_api, set_default_openai_client
+from agents import Agent, Runner, Tool, function_tool, set_default_openai_api, set_default_openai_client
 from agents.tracing import set_trace_processors
 from databricks_openai import AsyncDatabricksOpenAI
 from databricks_openai.agents import McpServer
@@ -117,7 +117,7 @@ assert SUBAGENTS, (
 set_default_openai_client(AsyncDatabricksOpenAI())
 set_default_openai_api("chat_completions")
 set_trace_processors([])  # only use mlflow for trace processing
-mlflow.openai.autolog()
+mlflow.openai.autolog()  # type: ignore[attr-defined]
 logging.getLogger("mlflow.utils.autologging_utils").setLevel(logging.ERROR)
 litellm.suppress_debug_info = True
 
@@ -148,7 +148,7 @@ def _make_subagent_tool(subagent: dict):
     return function_tool(_call)
 
 
-subagent_tools = [_make_subagent_tool(sa) for sa in SUBAGENTS if sa["type"] != "genie"]
+subagent_tools: list[Tool] = [_make_subagent_tool(sa) for sa in SUBAGENTS if sa["type"] != "genie"]
 
 
 # ---------------------------------------------------------------------------
@@ -167,7 +167,7 @@ async def init_mcp_server():
     )
 
 
-def create_orchestrator_agent(mcp_server: McpServer) -> Agent:
+def create_orchestrator_agent(mcp_server: McpServer | None) -> Agent:
     """Build the orchestrator agent with all tools and MCP servers."""
     # TODO: Update these instructions to match the tools you keep or add.
     # The more specific the instructions, the more accurately the agent will
@@ -227,8 +227,8 @@ async def invoke_handler(request: ResponsesAgentRequest) -> ResponsesAgentRespon
     async with await init_mcp_server() as mcp_server:
         agent = create_orchestrator_agent(mcp_server)
         messages = [i.model_dump() for i in request.input]
-        result = await Runner.run(agent, messages)
-        return ResponsesAgentResponse(output=[item.to_input_item() for item in result.new_items])
+        result = await Runner.run(agent, messages)  # type: ignore[arg-type]
+        return ResponsesAgentResponse(output=result.to_input_list())  # type: ignore[arg-type]
 
 
 @stream()
@@ -240,7 +240,7 @@ async def stream_handler(request: ResponsesAgentRequest) -> AsyncGenerator[Respo
     async with await init_mcp_server() as mcp_server:
         agent = create_orchestrator_agent(mcp_server)
         messages = [i.model_dump() for i in request.input]
-        result = Runner.run_streamed(agent, input=messages)
+        result = Runner.run_streamed(agent, input=messages)  # type: ignore[arg-type]
 
         async for event in process_agent_stream_events(result.stream_events()):
             yield event
