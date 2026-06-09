@@ -11,9 +11,9 @@ load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env", override=True)
 # Need to import the agent to register the functions with the server
 import agent_server.agent  # noqa: E402
 
-agent_server = AgentServer("ResponsesAgent", enable_chat_proxy=True)
+_server = AgentServer("ResponsesAgent", enable_chat_proxy=True)
 # Define the app as a module level variable to enable multiple workers
-app = agent_server.app  # noqa: F841
+app = _server.app  # noqa: F841
 setup_mlflow_git_based_version_tracking()
 
 # Register A2A protocol endpoints (HTTP+JSON/REST binding v1.0)
@@ -21,4 +21,4 @@ setup_mlflow_git_based_version_tracking()
 add_a2a_endpoints(app, build_agent_card())
 
 def main():
-    agent_server.run(app_import_string="agent_server.start_server:app")
+    _server.run(app_import_string="agent_server.start_server:app")
