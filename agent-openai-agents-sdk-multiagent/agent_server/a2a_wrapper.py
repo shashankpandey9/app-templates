@@ -182,11 +182,13 @@ def _json_compact(obj: Any) -> str:
 async def _invoke_orchestrator(user_text: str, session_id: str | None = None) -> str:
     """Call into the MLflow @invoke handler registered in agent.py."""
     from mlflow.types.responses import ResponsesAgentRequest
+    from mlflow.types.responses_helpers import Message
 
     from agent_server.agent import invoke_handler
 
     request = ResponsesAgentRequest(
-        input=[{"role": "user", "content": user_text}],
+        input=[
+            Message(role="user", content=user_text)],
     )
 
     response = await invoke_handler(request)
@@ -196,11 +198,11 @@ async def _invoke_orchestrator(user_text: str, session_id: str | None = None) ->
     for item in response.output:
         # OutputMessage → item.content list of ContentPart
         if hasattr(item, "content"):
-            for cp in item.content:
+            for cp in item.content:  # type: ignore[attr-defined]
                 if hasattr(cp, "text"):
                     parts.append(cp.text)
         elif hasattr(item, "text"):
-            parts.append(item.text)
+            parts.append(item.text)  # type: ignore[attr-defined]
     return "\n".join(parts) if parts else str(response.output)
 
 
@@ -211,11 +213,12 @@ async def _invoke_orchestrator(user_text: str, session_id: str | None = None) ->
 async def _stream_orchestrator(user_text: str, task_id: str, context_id: str):
     """Yield SSE ``data:`` lines from the streaming orchestrator."""
     from mlflow.types.responses import ResponsesAgentRequest
+    from mlflow.types.responses_helpers import Message
 
     from agent_server.agent import stream_handler
 
     request = ResponsesAgentRequest(
-        input=[{"role": "user", "content": user_text}],
+        input=[Message(role="user", content=user_text)],
     )
 
     # 1) Emit initial Task (working)
