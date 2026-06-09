@@ -3,15 +3,26 @@ import pytest
 from template_config import (
     DEFAULT_GENIE_SPACE_ID,
     DEFAULT_LAKEBASE,
+    DEFAULT_LAKEBASE_AUTOSCALING_ENDPOINT,
     DEFAULT_PROFILE,
     DEFAULT_SERVING_ENDPOINT,
+    DEFAULT_TARGET_APP_NAME,
     REPO_ROOT,
 )
 
 
 def pytest_addoption(parser):
     parser.addoption("--profile", default=DEFAULT_PROFILE, help="Databricks CLI profile")
-    parser.addoption("--lakebase", default=DEFAULT_LAKEBASE, help="Lakebase instance name")
+    parser.addoption(
+        "--lakebase-provisioned-name",
+        default=DEFAULT_LAKEBASE,
+        help="Lakebase provisioned instance name",
+    )
+    parser.addoption(
+        "--lakebase-autoscaling-endpoint",
+        default=DEFAULT_LAKEBASE_AUTOSCALING_ENDPOINT,
+        help="Lakebase autoscaling endpoint (e.g. projects/my-project/branches/my-branch/endpoints/primary)",
+    )
     parser.addoption("--template", action="append", default=None, help="Run only these templates (repeatable)")
     parser.addoption(
         "--genie-space-id",
@@ -22,6 +33,11 @@ def pytest_addoption(parser):
         "--serving-endpoint",
         default=DEFAULT_SERVING_ENDPOINT,
         help="Serving endpoint name for multiagent template",
+    )
+    parser.addoption(
+        "--target-app-name",
+        default=DEFAULT_TARGET_APP_NAME,
+        help="Target app name for the multiagent template's app-to-app CAN_USE permission",
     )
     parser.addoption(
         "--skip-local", action="store_true", default=False, help="Skip local testing"
@@ -61,8 +77,13 @@ def profile(request):
 
 
 @pytest.fixture
-def lakebase(request):
-    return request.config.getoption("--lakebase")
+def lakebase_provisioned_name(request):
+    return request.config.getoption("--lakebase-provisioned-name")
+
+
+@pytest.fixture
+def lakebase_autoscaling_endpoint(request):
+    return request.config.getoption("--lakebase-autoscaling-endpoint")
 
 
 @pytest.fixture
